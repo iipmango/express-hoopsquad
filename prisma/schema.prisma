@@ -1,0 +1,340 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "InnoDB"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model MatchAlarm {
+  id          Int      @id @default(autoincrement())
+  Posting_id  Int
+  User_id     Int
+  Opponent_id Int
+  IsApply     Boolean?
+  createdAt   DateTime @default(now())
+  Opponent    User     @relation("Opponent", fields: [Opponent_id], references: [User_id], onDelete: Cascade, onUpdate: NoAction)
+  Posting     Posting  @relation(fields: [Posting_id], references: [Posting_id], onDelete: Cascade, onUpdate: NoAction)
+  User        User     @relation("User", fields: [User_id], references: [User_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_Alarm_User")
+
+  @@index([User_id], map: "User_idx")
+  @@index([Opponent_id], map: "MatchAlarm_Opponent_id_fkey")
+  @@index([Posting_id], map: "MatchAlarm_Posting_id_fkey")
+}
+
+model ChatRoom {
+  id           Int          @id @default(autoincrement())
+  Room_id      Int
+  User_id      Int
+  Posting_id   Int
+  IsHost       Boolean      @default(false)
+  Time         DateTime     @default(now()) @db.Timestamp(0)
+  Posting      Posting      @relation(fields: [Posting_id], references: [Posting_id], onDelete: Cascade, onUpdate: NoAction)
+  ChatRoomList ChatRoomList @relation(fields: [Room_id], references: [Room_id], onDelete: Cascade, onUpdate: NoAction)
+  User         User         @relation(fields: [User_id], references: [User_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([Room_id], map: "ChatRoom_Room_id_fkey")
+  @@index([User_id], map: "ChatRoom_User_id_fkey")
+  @@index([Posting_id], map: "ChatRoom_Posting_id_fkey")
+}
+
+model ChatRoomList {
+  Room_id  Int        @id @default(autoincrement())
+  ChatRoom ChatRoom[]
+  Message  Message[]
+}
+
+model Court {
+  Court_id Int      @id @default(autoincrement())
+  Name     String   @db.VarChar(45)
+  Date     DateTime @default(now()) @db.Timestamp(0)
+  Location String   @db.VarChar(100)
+  Map_id   Int
+  Map      Map      @relation(fields: [Map_id], references: [Map_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_Court_Map")
+  Report   Report[]
+
+  @@index([Map_id], map: "Map_idx")
+}
+
+model Map {
+  Map_id       Int       @id @default(autoincrement())
+  LocationName String    @db.VarChar(45)
+  Lat          Float     @db.Float
+  Lng          Float     @db.Float
+  Court        Court[]
+  Posting      Posting[]
+}
+
+model Message {
+  Message_id   Int          @id @default(autoincrement())
+  Room_id      Int
+  Msg          String       @db.LongText
+  ChatTime     DateTime     @default(now()) @db.Timestamp(0)
+  User_id      Int
+  ChatRoomList ChatRoomList @relation(fields: [Room_id], references: [Room_id], onDelete: Cascade, onUpdate: NoAction)
+  User         User         @relation(fields: [User_id], references: [User_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([Room_id], map: "Room_idx")
+  @@index([User_id], map: "Message_User_id_fkey")
+}
+
+model OAuthToken {
+  id               Int    @id @default(autoincrement())
+  User_id          Int
+  AccessToken      String @db.VarChar(255)
+  RefreshToken     String @db.VarChar(255)
+  AToken_CreatedAt String @db.VarChar(20)
+  RToken_CreatedAt String @db.VarChar(20)
+  AToken_Expires   Int
+  RToken_Expires   Int
+  Auth_id          String @db.VarChar(40)
+  User             User   @relation(fields: [User_id], references: [User_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_OAuthToken_User")
+
+  @@index([User_id], map: "Personal_idx")
+}
+
+model Posting {
+  Posting_id     Int              @id @default(autoincrement())
+  User_id        Int
+  IsTeam         Boolean          @default(false)
+  Title          String           @db.VarChar(100)
+  WriteDate      DateTime         @default(now()) @db.Timestamp(0)
+  PlayTime       Int
+  Location       String           @db.VarChar(45)
+  RecruitAmount  String           @db.VarChar(45)
+  CurrentAmount  String           @db.VarChar(45)
+  Introduce      String?          @db.VarChar(600)
+  Map_id         Int
+  ChatRoom       ChatRoom[]
+  GameType       GameType[]
+  Image          Image[]
+  MatchAlarm     MatchAlarm[]
+  MatchJoinApply MatchJoinApply[]
+  Member         Member[]
+  Map            Map              @relation(fields: [Map_id], references: [Map_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_Posting_Map")
+  User           User             @relation(fields: [User_id], references: [User_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_Posting_User")
+  TeamMatchApply TeamMatchApply?
+
+  @@index([User_id], map: "Writer_idx")
+  @@index([Map_id], map: "fk_Posting_Map1_idx")
+}
+
+model Profile {
+  User_id    Int        @unique
+  Height     Float?     @db.Float
+  Introduce  String?    @db.VarChar(45)
+  Overall    Int
+  Team_id    Int?
+  Weight     Int?
+  Year       Int?
+  Profile_id Int        @id @default(autoincrement())
+  Location1  String?    @db.VarChar(45)
+  Location2  String?    @db.VarChar(45)
+  City1      String?
+  City2      String?
+  GameType   GameType[]
+  Image      Image[]
+  User       User       @relation(fields: [User_id], references: [User_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_Profile_User")
+
+  @@index([User_id], map: "fk_Profile_User")
+}
+
+model Review {
+  Review_id   Int           @id @default(autoincrement())
+  Comment     String        @db.VarChar(100)
+  IsPositive  Boolean
+  Receiver_id Int
+  ReviewRelay ReviewRelay[]
+
+  @@index([Review_id], map: "fk_Review_Review")
+}
+
+model ReviewRelay {
+  ReviewRelay_id Int     @id @default(autoincrement())
+  Review_id      Int
+  User_id        Int
+  IsReceiver     Boolean @default(false)
+  Review         Review  @relation(fields: [Review_id], references: [Review_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_ReviewRelay_Review")
+  User           User    @relation(fields: [User_id], references: [User_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_ReviewRelay_User")
+
+  @@index([Review_id], map: "fk_ReviewRelay_Review")
+  @@index([User_id], map: "fk_ReviewRelay_User")
+}
+
+model TeamProfile {
+  Team_id       Int             @id @default(autoincrement())
+  Admin_id      Int
+  Name          String          @db.VarChar(45)
+  Introduce     String?         @db.VarChar(100)
+  LatestDate    DateTime?       @db.DateTime(0)
+  ActiveTime    String?          @db.VarChar(100)
+  UserAmount    Int?
+  Location1     String          @db.VarChar(45)
+  Location2     String?         @db.VarChar(45)
+  City1         String
+  City2         String?
+  TeamImage     TeamImage?
+  TeamJoinApply TeamJoinApply[]
+  User          User            @relation(fields: [Admin_id], references: [User_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_TeamProfile_Admin")
+  TeamRecord    TeamRecord[]
+  TeamRelay     TeamRelay[]
+
+  @@index([Admin_id], map: "fk_TeamProfile_UserProfile1_idx")
+}
+
+model TeamRelay {
+  Team_id      Int
+  IsAdmin      Boolean
+  User_id      Int
+  joinTime DateTime    @default(now()) @db.Timestamp(0)
+  TeamRelay_id Int         @id @default(autoincrement())
+  User         User        @relation(fields: [User_id], references: [User_id], onDelete: Cascade, onUpdate: NoAction)
+  TeamProfile  TeamProfile @relation(fields: [Team_id], references: [Team_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_TeamRelay_TeamProfile")
+
+  @@index([Team_id], map: "fk_TeamRelay_TeamProfile")
+  @@index([User_id], map: "TeamRelay_User_id_fkey")
+}
+
+model User {
+  User_id        Int              @id @default(autoincrement())
+  Name           String           @db.VarChar(45)
+  ChatRoom       ChatRoom[]
+  Opponent       MatchAlarm[]     @relation("Opponent")
+  User           MatchAlarm[]     @relation("User")
+  Member         Member[]
+  Message        Message[]
+  OAuthToken     OAuthToken[]
+  Posting        Posting[]
+  Profile        Profile?
+  ReviewRelay    ReviewRelay[]
+  TeamJoinApply  TeamJoinApply[]
+  TeamProfile    TeamProfile[]
+  TeamRelay      TeamRelay[]
+  UserData       UserData[]
+  MatchJoinApply MatchJoinApply[]
+  PushToken      PushToken?
+}
+
+model Image {
+  Image_id   Int      @id @default(autoincrement())
+  ImageData  String   @db.VarChar(100)
+  Posting_id Int?
+  Profile_id Int?
+  Posting    Posting? @relation(fields: [Posting_id], references: [Posting_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_image_posting")
+  Profile    Profile? @relation(fields: [Profile_id], references: [Profile_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_image_profile")
+
+  @@index([Posting_id], map: "fk_image_posting")
+  @@index([Profile_id], map: "fk_image_profile")
+}
+
+model UserData {
+  Data_id  Int    @id @default(autoincrement())
+  Email    String @db.VarChar(50)
+  Password String @db.VarChar(50)
+  User_id  Int
+  User     User   @relation(fields: [User_id], references: [User_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_UserData_User")
+
+  @@index([User_id], map: "User_idx")
+}
+
+model GameType {
+  GameType_id  Int      @id @default(autoincrement())
+  Posting_id   Int?
+  OneOnOne     Boolean  @default(false)
+  ThreeOnThree Boolean  @default(false)
+  FiveOnFive   Boolean  @default(false)
+  Profile_id   Int?
+  Profile      Profile? @relation(fields: [Profile_id], references: [Profile_id], onDelete: Cascade, onUpdate: NoAction)
+  Posting      Posting? @relation(fields: [Posting_id], references: [Posting_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_GameType_posting")
+
+  @@index([Profile_id], map: "GameType_Profile_id_fkey")
+  @@index([Posting_id], map: "fk_GameType_posting")
+}
+
+model Report {
+  id       Int   @id @default(autoincrement())
+  Court_id Int
+  Court    Court @relation(fields: [Court_id], references: [Court_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([Court_id], map: "Report_Court_id_fkey")
+}
+
+model Member {
+  id         Int     @id @default(autoincrement())
+  Posting_id Int
+  User_id    Int
+  IsHost     Boolean @default(false)
+  Posting    Posting @relation(fields: [Posting_id], references: [Posting_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_member_Posting")
+  User       User    @relation(fields: [User_id], references: [User_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_member_user")
+
+  @@index([Posting_id], map: "fk_member_Posting")
+  @@index([User_id], map: "fk_member_User")
+}
+
+model TeamImage {
+  id          Int         @id @default(autoincrement())
+  Team_id     Int         @unique
+  ImageName   String      @db.VarChar(50)
+  TeamProfile TeamProfile @relation(fields: [Team_id], references: [Team_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([Team_id], map: "TeamImage_Team_id_fkey")
+}
+
+model TeamRecord {
+  Record_id Int            @id @default(autoincrement())
+  Team_id   Int
+  Match_id  Int
+  Score     Int?
+  IsHost    Boolean
+  IsWin     Boolean?
+  MatchTime String?
+  TeamMatch TeamMatchApply @relation(fields: [Match_id], references: [TeamMatch_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_TeamRecord_TeamMatch")
+  Team      TeamProfile    @relation(fields: [Team_id], references: [Team_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_TeamRecord_TeamProfile")
+
+  @@index([Match_id], map: "fk_TeamRecord_TeamMatch")
+  @@index([Team_id], map: "fk_TeamRecord_TeamProfile")
+}
+
+model TeamJoinApply {
+  id       Int         @id @default(autoincrement())
+  Team_id  Int
+  User_id  Int
+  joinTime DateTime    @default(now()) @db.Timestamp(0)
+  IsApply  Boolean?
+  Team     TeamProfile @relation(fields: [Team_id], references: [Team_id], onDelete: Cascade, onUpdate: NoAction)
+  User     User        @relation(fields: [User_id], references: [User_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([Team_id], map: "TeamJoinApply_Team_id_fkey")
+  @@index([User_id], map: "TeamJoinApply_User_id_fkey")
+}
+
+model PushToken {
+  User_id Int    @id
+  Token   String @db.VarChar(100)
+  User    User   @relation(fields: [User_id], references: [User_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model MatchJoinApply {
+  id         Int      @id @default(autoincrement())
+  Posting_id Int
+  User_id    Int
+  IsApply    Boolean?
+  Posting    Posting  @relation(fields: [Posting_id], references: [Posting_id], onDelete: Cascade, onUpdate: NoAction)
+  User       User     @relation(fields: [User_id], references: [User_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([Posting_id], map: "MatchJoinApply_Posting_id_fkey")
+  @@index([User_id], map: "MatchJoinApply_User_id_fkey")
+}
+
+model TeamMatchApply {
+  TeamMatch_id Int          @id @default(autoincrement())
+  ApplyDate     DateTime    @default(now()) @db.Timestamp(0)
+  IsApply      Boolean?
+  Posting_id   Int          @unique
+  Posting      Posting      @relation(fields: [Posting_id], references: [Posting_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_TeamMatch_TeamPosting")
+  TeamRecord   TeamRecord[]
+
+  @@index([Posting_id], map: "fk_TeamMatch_TeamPosting")
+}

@@ -1,0 +1,31 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - master
+env:
+  AWS_DEFAULT_REGION: ap-northeast-2
+  SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up SSH key
+        run: |
+          echo "$SSH_PRIVATE_KEY" >> $HOME/key.pem
+          chmod 400 $HOME/key.pem
+
+      - name: SSH into remote server and run commands
+        run: |
+          ssh -o StrictHostKeyChecking=no -i $HOME/key.pem ubuntu@52.79.227.4 "\
+            cd /home/ubuntu/HoopSquad-Backend && \
+            git pull -f origin master && \
+            yarn install && \
+            yarn prisma db push && \
+            tsc"
